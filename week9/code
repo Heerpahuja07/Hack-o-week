@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Chess - Two Player</title>
+<style>
+    body {
+        margin: 0;
+        font-family: 'Segoe UI', sans-serif;
+        background: linear-gradient(135deg, #0f172a, #1e293b);
+        color: white;
+        text-align: center;
+    }
+
+    h1 {
+        margin-top: 20px;
+        font-size: 40px;
+    }
+
+    h1 span {
+        color: #ff6b6b;
+    }
+
+    .sub {
+        color: #94a3b8;
+        margin-bottom: 20px;
+    }
+
+    .controls {
+        margin-bottom: 20px;
+    }
+
+    .controls span {
+        padding: 10px 20px;
+        border-radius: 10px;
+        margin: 0 5px;
+        background: #1e293b;
+    }
+
+    .active {
+        background: #334155;
+    }
+
+    .board {
+        width: 480px;
+        height: 480px;
+        margin: auto;
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        border: 8px solid #3f3f46;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .square {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+        cursor: pointer;
+    }
+
+    .light {
+        background: #f0d9b5;
+        color: black;
+    }
+
+    .dark {
+        background: #b58863;
+        color: black;
+    }
+
+    .selected {
+        outline: 3px solid yellow;
+    }
+
+    .buttons {
+        margin-top: 20px;
+    }
+
+    button {
+        padding: 10px 15px;
+        margin: 5px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        background: #334155;
+        color: white;
+    }
+
+    button:hover {
+        background: #475569;
+    }
+
+    .new {
+        background: #ef4444;
+    }
+</style>
+</head>
+<body>
+
+<h1>Chess - <span>Two Player</span></h1>
+<div class="sub">White vs Black with Undo/Redo</div>
+
+<div class="controls">
+    <span id="whiteLabel" class="active">White to move</span>
+    <span id="blackLabel">Black Player</span>
+</div>
+
+<div class="board" id="board"></div>
+
+<div class="buttons">
+    <button onclick="undo()">Undo</button>
+    <button onclick="redo()">Redo</button>
+    <button class="new" onclick="resetGame()">New Game</button>
+</div>
+
+<script>
+const pieces = {
+    r:'♜', n:'♞', b:'♝', q:'♛', k:'♚', p:'♟',
+    R:'♖', N:'♘', B:'♗', Q:'♕', K:'♔', P:'♙'
+};
+
+let boardState = [
+    "rnbqkbnr",
+    "pppppppp",
+    "........",
+    "........",
+    "........",
+    "........",
+    "PPPPPPPP",
+    "RNBQKBNR"
+];
+
+let selected = null;
+let turn = "white";
+let history = [];
+let future = [];
+
+const board = document.getElementById("board");
+
+function drawBoard() {
+    board.innerHTML = "";
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            const sq = document.createElement("div");
+            sq.classList.add("square");
+            sq.classList.add((r + c) % 2 === 0 ? "light" : "dark");
+
+            let piece = boardState[r][c];
+            if (piece !== ".") sq.textContent = pieces[piece];
+
+            sq.onclick = () => handleClick(r, c);
+            board.appendChild(sq);
+        }
+    }
+
+    document.getElementById("whiteLabel").classList.toggle("active", turn==="white");
+    document.getElementById("blackLabel").classList.toggle("active", turn==="black");
+}
+
+function handleClick(r, c) {
+    if (selected) {
+        saveState();
+        movePiece(selected.r, selected.c, r, c);
+        selected = null;
+        turn = turn === "white" ? "black" : "white";
+    } else {
+        selected = {r, c};
+    }
+    drawBoard();
+}
+
+function movePiece(r1, c1, r2, c2) {
+    let from = boardState[r1];
+    let to = boardState[r2];
+
+    boardState[r2] = to.substring(0,c2) + from[c1] + to.substring(c2+1);
+    boardState[r1] = from.substring(0,c1) + "." + from.substring(c1+1);
+}
+
+function saveState() {
+    history.push(JSON.stringify(boardState));
+    future = [];
+}
+
+function undo() {
+    if (history.length === 0) return;
+    future.push(JSON.stringify(boardState));
+    boardState = JSON.parse(history.pop());
+    turn = turn === "white" ? "black" : "white";
+    drawBoard();
+}
+
+function redo() {
+    if (future.length === 0) return;
+    history.push(JSON.stringify(boardState));
+    boardState = JSON.parse(future.pop());
+    turn = turn === "white" ? "black" : "white";
+    drawBoard();
+}
+
+function resetGame() {
+    boardState = [
+        "rnbqkbnr",
+        "pppppppp",
+        "........",
+        "........",
+        "........",
+        "........",
+        "PPPPPPPP",
+        "RNBQKBNR"
+    ];
+    history = [];
+    future = [];
+    turn = "white";
+    drawBoard();
+}
+
+drawBoard();
+</script>
+
+</body>
+</html>
